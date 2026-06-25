@@ -17,6 +17,7 @@ class AlarmPopup(tk.Toplevel):
         super().__init__(master)
         self.alarm = alarm
         self.settings = settings
+        self._muted = False
         self.title("Alarm")
         self.geometry("300x150")
         self.attributes("-topmost", True)
@@ -26,6 +27,7 @@ class AlarmPopup(tk.Toplevel):
 
         button_frame = tk.Frame(self)
         button_frame.pack(pady=10)
+        tk.Button(button_frame, text="Mute", command=self.mute).pack(side=tk.LEFT, padx=5)
         tk.Button(button_frame, text="Snooze", command=self.snooze).pack(side=tk.LEFT, padx=5)
         tk.Button(button_frame, text="Dismiss", command=self.dismiss).pack(side=tk.LEFT, padx=5)
 
@@ -57,14 +59,23 @@ class AlarmPopup(tk.Toplevel):
             self.repeat_sound()
 
     def _play_alarm_sound(self) -> None:
+        if getattr(self, "_muted", False):
+            return
         if self.alarm.radio_url:
             ring_controller.start(self.settings, self.alarm.radio_url, radio=True, loop=False, name=self.alarm.name)
         else:
             ring_controller.start(self.settings, self.alarm.sound_file, loop=False, name=self.alarm.name)
 
     def repeat_sound(self) -> None:
+        if getattr(self, "_muted", False):
+            return
         ring_controller.start(self.settings, self.alarm.sound_file, loop=False, name=self.alarm.name)
         self.after(3000, self.repeat_sound)
+
+    def mute(self) -> None:
+        self._muted = True
+        ring_controller.stop(self.alarm.name)
+        activity_log.log("alarm_muted", self.alarm.name, "")
 
     def snooze(self) -> None:
         ring_controller.stop(self.alarm.name)

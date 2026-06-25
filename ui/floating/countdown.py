@@ -28,6 +28,7 @@ class CountdownWindow(FloatingWindow):
         self.overdue_popup = None
         self._overdue_label = None
         self._overdue_after_id = None
+        self._muted = False
         self.completed_at = timer_obj.completed_at
         self._completion_handled = False
 
@@ -70,6 +71,7 @@ class CountdownWindow(FloatingWindow):
             self.timer.resume()
             self._completion_handled = False
             self.completed_at = None
+            self._muted = False
             activity_log.log("timer_started", self.timer.label,
                              f"remaining={self.time_left}s")
         self.paused = self.timer.status != "running"
@@ -88,6 +90,7 @@ class CountdownWindow(FloatingWindow):
             pass
         self._completion_handled = False
         self.completed_at = None
+        self._muted = False
         self.time_left = self.timer.current_remaining()
         self.paused = True
         activity_log.log("timer_reset", self.timer.label,
@@ -172,6 +175,7 @@ class CountdownWindow(FloatingWindow):
             self._show_overdue_popup()
             return
         self._completion_handled = True
+        self._muted = False
         self.completed_at = self.timer.completed_at or completed_at or time_mod.time()
         self.timer.completed_at = self.completed_at
         ring_controller.start(self.settings, loop=True, name=self.timer.label)
@@ -198,8 +202,12 @@ class CountdownWindow(FloatingWindow):
         label.pack(padx=8, pady=(8, 2))
         self._overdue_label = tk.Label(top, text="+00:00", font=("Arial", 12))
         self._overdue_label.pack(padx=8, pady=2)
-        close_btn = tk.Button(top, text="Close", command=self._close_overdue_popup)
-        close_btn.pack(padx=8, pady=(2, 8))
+        button_frame = tk.Frame(top)
+        button_frame.pack(padx=8, pady=(2, 8))
+        mute_btn = tk.Button(button_frame, text="Mute", command=self._mute_overdue_popup)
+        mute_btn.pack(side=tk.LEFT, padx=(0, 5))
+        close_btn = tk.Button(button_frame, text="Close", command=self._close_overdue_popup)
+        close_btn.pack(side=tk.LEFT)
         self.overdue_popup = top
         self._update_overdue_popup()
 
@@ -214,6 +222,14 @@ class CountdownWindow(FloatingWindow):
             pass
         try:
             self._overdue_after_id = self.overdue_popup.after(1000, self._update_overdue_popup)
+        except Exception:
+            pass
+
+    def _mute_overdue_popup(self) -> None:
+        self._muted = True
+        try:
+            ring_controller.stop(self.timer.label)
+            activity_log.log("timer_muted", self.timer.label, "")
         except Exception:
             pass
 
