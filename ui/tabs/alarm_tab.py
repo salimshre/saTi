@@ -31,7 +31,7 @@ class AlarmTab:
 
         columns = ("name", "type", "next_trigger", "enabled", "show")
         self.tree = ttk.Treeview(self.frame, columns=columns, show="headings")
-        for column, heading in zip(columns, ("Name", "Type", "Next Trigger", "Enabled", "Floating")):
+        for column, heading in zip(columns, ("Name", "Type", "Next Trigger", "Enabled", "Floating"), strict=True):
             self.tree.heading(column, text=heading)
         self.tree.column("show", width=60)
         self.tree.pack(expand=True, fill="both")

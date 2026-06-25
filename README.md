@@ -3,12 +3,13 @@
 SaTi is a desktop alarm clock app built with Python and `tkinter`. It includes:
 
 - alarms
-- countdown timers
+- countdown timers with overdue companion popups
 - stopwatches
 - floating mini windows
 - local JSON-based data storage
 - platform-aware config storage with safe fallback
 - optional tray and desktop notification support
+- bundled alarm sounds with preview controls
 
 ## Project Structure
 
@@ -18,6 +19,8 @@ SaTi is a desktop alarm clock app built with Python and `tkinter`. It includes:
 - [ui](/C:/Users/StudyAcer/Downloads/new/SaTi/ui): main window, dialogs, floating windows
 - [tests](/C:/Users/StudyAcer/Downloads/new/SaTi/tests): model and persistence tests
 - [pyproject.toml](/C:/Users/StudyAcer/Downloads/new/SaTi/pyproject.toml): package metadata and dependencies
+- [sounds](/C:/Users/StudyAcer/Downloads/new/SaTi/sounds): bundled alarm/ring tracks
+- [scripts/build_desktop.py](/C:/Users/StudyAcer/Downloads/new/SaTi/scripts/build_desktop.py): PyInstaller build helper
 
 ## Requirements
 
@@ -111,6 +114,8 @@ python3 -m pip install -e .[desktop]
 - If no sound backend is available, SaTi falls back to a simple beep when possible.
 - Closing the main window minimizes SaTi to the tray when tray dependencies are installed.
 - Timers continue running even if their floating window is closed, and they resume correctly after app restart.
+- When a countdown timer reaches zero, SaTi opens a small topmost overdue popup, starts the configured ring, and counts upward from the completion time.
+- Change the countdown/alarm ring from `File > Settings > Sound` or the `Sound Settings` button on the Countdown Timers dashboard.
 
 ## Troubleshooting
 
@@ -191,8 +196,22 @@ or on Windows:
 python -m pip install -e .[desktop]
 ```
 
-You can start experimenting with PyInstaller, for example:
+Build with the included PyInstaller spec:
 
 ```bash
-pyinstaller --noconfirm --onefile main.py
+python3 scripts/build_desktop.py
 ```
+
+or on Windows:
+
+```powershell
+python scripts\build_desktop.py
+```
+
+After installing with `python -m pip install -e .[desktop]`, you can also run:
+
+```bash
+sati-build
+```
+
+The build includes bundled files from the `sounds/` directory.

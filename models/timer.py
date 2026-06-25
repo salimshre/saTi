@@ -20,6 +20,7 @@ class Timer:
         floating_geometry: str | None = None,
         floating_alpha: float | None = None,
         last_started_at: float | None = None,
+        completed_at: float | None = None,
     ) -> None:
         self.id = id or str(uuid.uuid4())
         self.label = label
@@ -31,6 +32,7 @@ class Timer:
         self.floating_geometry = floating_geometry
         self.floating_alpha = floating_alpha
         self.last_started_at = last_started_at
+        self.completed_at = completed_at
 
     def to_dict(self) -> dict:
         return {
@@ -44,10 +46,11 @@ class Timer:
             "floating_geometry": self.floating_geometry,
             "floating_alpha": self.floating_alpha,
             "last_started_at": self.last_started_at,
+            "completed_at": self.completed_at,
         }
 
     @staticmethod
-    def from_dict(data: dict) -> "Timer":
+    def from_dict(data: dict) -> Timer:
         timer = Timer(
             id=data.get("id"),
             label=data.get("label", "Timer"),
@@ -57,10 +60,10 @@ class Timer:
             floating_geometry=data.get("floating_geometry"),
             floating_alpha=data.get("floating_alpha"),
             last_started_at=data.get("last_started_at"),
+            completed_at=data.get("completed_at"),
         )
         timer.remaining = float(data.get("remaining", timer.duration))
         timer.status = data.get("status", "stopped")
-        timer.sync_state()
         return timer
 
     def current_remaining(self, now: float | None = None) -> float:
@@ -75,6 +78,8 @@ class Timer:
         """Update remaining and keep last_started_at in sync."""
         now = now if now is not None else time_mod.time()
         if self.status == "running":
+            previous_remaining = max(0.0, self.remaining)
+            started_at = self.last_started_at
             # Update remaining based on elapsed time
             self.remaining = self.current_remaining(now)
             # IMPORTANT: set last_started_at to now to keep the pair consistent
@@ -83,13 +88,17 @@ class Timer:
                 self.remaining = 0.0
                 self.status = "completed"
                 self.last_started_at = None
+                if self.completed_at is None:
+                    self.completed_at = (started_at + previous_remaining) if started_at is not None else now
         elif self.status == "completed":
             self.remaining = 0.0
             self.last_started_at = None
+            self.completed_at = self.completed_at or now
         else:
             # paused or stopped: remaining is already correct
             self.remaining = max(0.0, self.remaining)
             self.last_started_at = None
+            self.completed_at = None
 
     def resume(self, now: float | None = None) -> None:
         """Start or resume the timer."""
@@ -98,9 +107,11 @@ class Timer:
             self.status = "completed"
             self.remaining = 0.0
             self.last_started_at = None
+            self.completed_at = self.completed_at or (now if now is not None else time_mod.time())
             return
         self.status = "running"
         self.last_started_at = now if now is not None else time_mod.time()
+        self.completed_at = None
 
     def pause(self, now: float | None = None) -> None:
         """Pause the running timer."""
@@ -113,6 +124,14 @@ class Timer:
         self.remaining = self.duration
         self.status = "stopped"
         self.last_started_at = None
+        self.completed_at = None
+
+    def overdue_elapsed(self, now: float | None = None) -> float:
+        """Return seconds elapsed since completion."""
+        if self.status != "completed" or self.completed_at is None:
+            return 0.0
+        now = now if now is not None else time_mod.time()
+        return max(0.0, now - self.completed_at)
 
 
 class TimerManager:

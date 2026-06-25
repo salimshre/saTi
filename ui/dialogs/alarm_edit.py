@@ -4,8 +4,8 @@ Dialog for creating / editing an Alarm, plus ask_countdown_duration helper.
 """
 import datetime
 import tkinter as tk
-from tkinter import messagebox, simpledialog
 import uuid
+from tkinter import messagebox, simpledialog
 
 from models.alarm import Alarm
 

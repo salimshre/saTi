@@ -5,13 +5,14 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from core.sound import player
+from core.ring import ring_controller
 from models import AlarmManager, StopwatchManager, TimerManager
 from ui.app_meta import APP_NAME, APP_VERSION
 from ui.icon import apply_app_icon
 from ui.scheduler import AppScheduler
 from ui.tabs import AlarmTab, StopwatchTab, TimerTab
 from ui.tray import TrayManager
+
 from .themes import ThemeManager
 
 
@@ -172,7 +173,7 @@ class AlarmClockApp:
         self.timer_manager.save()
         self.stopwatch_manager.save()
         self.settings.save()
-        player.stop_radio()
+        ring_controller.stop()
         for win in list(self.open_alarm_windows.values()):
             win.destroy()
         for win in list(self.open_timer_windows.values()):

@@ -16,7 +16,7 @@ class TimerTab:
     def __init__(self, app, notebook: ttk.Notebook) -> None:
         self.app = app
         self.frame = ttk.Frame(notebook)
-        notebook.add(self.frame, text="Timers")
+        notebook.add(self.frame, text="Countdown Timers")
         self.tree = None
         self.setup()
 
@@ -24,19 +24,20 @@ class TimerTab:
         toolbar = ttk.Frame(self.frame)
         toolbar.pack(fill="x", pady=5)
         for text, command in [
-            ("New Countdown", self.new_item),
+            ("New Countdown Timer", self.new_item),
             ("Edit Selected", self.edit_selected),
             ("Delete Selected", self.delete_selected),
             ("Pause/Resume", self.toggle_pause),
             ("Reset", self.reset_selected),
             ("Toggle Floating", self.toggle_floating),
+            ("Sound Settings", self.app.open_settings),
             ("Refresh", self.load_list),
         ]:
             ttk.Button(toolbar, text=text, command=command).pack(side=tk.LEFT, padx=5)
 
         columns = ("label", "remaining", "status", "show")
         self.tree = ttk.Treeview(self.frame, columns=columns, show="headings")
-        for column, heading in zip(columns, ("Label", "Remaining", "Status", "Floating")):
+        for column, heading in zip(columns, ("Label", "Remaining", "Status", "Floating"), strict=True):
             self.tree.heading(column, text=heading)
         self.tree.column("show", width=60)
         self.tree.pack(expand=True, fill="both")
@@ -84,7 +85,7 @@ class TimerTab:
     def edit_selected(self) -> None:
         selection = self.selected_ids()
         if not selection:
-            messagebox.showinfo("Edit", "Select a timer to edit.")
+            messagebox.showinfo("Edit", "Select a countdown timer to edit.")
             return
         timer = self.app.timer_manager.get(selection[0])
         if not timer:
@@ -109,7 +110,7 @@ class TimerTab:
         selection = self.selected_ids()
         if not selection:
             return
-        if not messagebox.askyesno("Delete Timer", f"Delete {len(selection)} selected timer(s)?"):
+        if not messagebox.askyesno("Delete Countdown Timer", f"Delete {len(selection)} selected countdown timer(s)?"):
             return
         for timer_id in selection:
             win = self.app.open_timer_windows.pop(timer_id, None)
@@ -146,6 +147,9 @@ class TimerTab:
         self.app.timer_manager.save()
         if timer.id in self.app.open_timer_windows:
             win = self.app.open_timer_windows[timer.id]
+            win._close_overdue_popup()
+            win._completion_handled = False
+            win.completed_at = None
             win.time_left = timer.remaining
             win.paused = True
             win.draw()
@@ -162,19 +166,13 @@ class TimerTab:
         else:
             timer = self.app.timer_manager.get(timer_id)
             if timer:
-                win = CountdownWindow(
-                    self.app.root,
-                    self.app.settings,
-                    self.app.theme_manager,
-                    timer,
-                    self.app.settings.get("tick_threshold", 10),
-                    app=self.app,
-                )
-                self.app.open_timer_windows[timer_id] = win
-                win.top.protocol("WM_DELETE_WINDOW", lambda _id=timer_id: self.app.on_timer_window_close(_id))
+                self._open_countdown_window(timer)
         self.load_list()
 
     def toggle_floating_for_restore(self, timer) -> None:
+        self._open_countdown_window(timer)
+
+    def _open_countdown_window(self, timer) -> CountdownWindow:
         win = CountdownWindow(
             self.app.root,
             self.app.settings,
@@ -185,6 +183,7 @@ class TimerTab:
         )
         self.app.open_timer_windows[timer.id] = win
         win.top.protocol("WM_DELETE_WINDOW", lambda _id=timer.id: self.app.on_timer_window_close(_id))
+        return win
 
     def refresh_runtime_state(self, now: float | None = None) -> None:
         now = now if now is not None else time_mod.time()
@@ -213,6 +212,12 @@ class TimerTab:
                 self.app.open_timer_windows[timer.id].time_left = timer.current_remaining(now)
                 self.app.open_timer_windows[timer.id].paused = timer.status != "running"
         if completed_ids:
+            for timer_id in completed_ids:
+                timer = self.app.timer_manager.get(timer_id)
+                if not timer:
+                    continue
+                win = self.app.open_timer_windows.get(timer.id) or self._open_countdown_window(timer)
+                win._handle_completion(timer.completed_at or now)
             self.app.timer_manager.save()
 
     @staticmethod

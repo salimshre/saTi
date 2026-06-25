@@ -45,7 +45,7 @@ class StopwatchTab:
 
         columns = ("label", "elapsed", "status", "show")
         self.tree = ttk.Treeview(list_frame, columns=columns, show="headings")
-        for column, heading in zip(columns, ("Label", "Elapsed", "Status", "Floating")):
+        for column, heading in zip(columns, ("Label", "Elapsed", "Status", "Floating"), strict=True):
             self.tree.heading(column, text=heading)
         self.tree.column("show", width=60)
         self.tree.pack(expand=True, fill="both")

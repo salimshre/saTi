@@ -10,6 +10,7 @@ dependencies = [
 
 [project.scripts]
 sati = "main:main"
+sati-build = "scripts.build_desktop:main"
 
 [project.optional-dependencies]
 desktop = [
@@ -20,6 +21,7 @@ desktop = [
 ]
 dev = [
   "pytest>=8.0",
+  "ruff>=0.6.0",
 ]
 
 [build-system]
@@ -28,3 +30,18 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+include = ["core*", "models*", "ui*", "scripts*"]
+exclude = ["bak*", "tests*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]

@@ -9,7 +9,7 @@ import webbrowser
 from tkinter import messagebox
 
 from core.logger import activity_log
-from core.sound import player
+from core.ring import ring_controller
 
 
 class AlarmPopup(tk.Toplevel):
@@ -34,13 +34,14 @@ class AlarmPopup(tk.Toplevel):
         self.run_actions()
 
     def run_actions(self) -> None:
+        has_sound_action = any(action.get("type") == "play_sound" for action in self.alarm.actions)
+        if not has_sound_action:
+            self._play_alarm_sound()
+
         for action in self.alarm.actions:
             action_type = action.get("type")
             if action_type == "play_sound":
-                if self.alarm.radio_url:
-                    player.play(self.alarm.radio_url, radio=True, volume=self.settings.get("volume", 100))
-                else:
-                    player.play(self.alarm.sound_file or self.settings.get("alarm_sound"), volume=self.settings.get("volume", 100))
+                self._play_alarm_sound()
             elif action_type == "launch":
                 command = action.get("command")
                 if command:
@@ -55,12 +56,18 @@ class AlarmPopup(tk.Toplevel):
         if self.alarm.repeat_until_dismissed and not self.alarm.radio_url:
             self.repeat_sound()
 
+    def _play_alarm_sound(self) -> None:
+        if self.alarm.radio_url:
+            ring_controller.start(self.settings, self.alarm.radio_url, radio=True, loop=False, name=self.alarm.name)
+        else:
+            ring_controller.start(self.settings, self.alarm.sound_file, loop=False, name=self.alarm.name)
+
     def repeat_sound(self) -> None:
-        player.play(self.alarm.sound_file or self.settings.get("alarm_sound"), volume=self.settings.get("volume", 100))
+        ring_controller.start(self.settings, self.alarm.sound_file, loop=False, name=self.alarm.name)
         self.after(3000, self.repeat_sound)
 
     def snooze(self) -> None:
-        player.stop_radio()
+        ring_controller.stop(self.alarm.name)
         activity_log.log("alarm_snoozed", self.alarm.name, f"snooze_minutes={self.alarm.snooze_minutes}")
         self.alarm.date_time = datetime.datetime.now() + datetime.timedelta(minutes=self.alarm.snooze_minutes)
         self.alarm.type = "one-time"
@@ -68,7 +75,7 @@ class AlarmPopup(tk.Toplevel):
         self.destroy()
 
     def dismiss(self) -> None:
-        player.stop_radio()
+        ring_controller.stop(self.alarm.name)
         activity_log.log("alarm_dismissed", self.alarm.name, "")
         self.destroy()
 

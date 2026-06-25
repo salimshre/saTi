@@ -2,7 +2,7 @@
 models/settings.py
 Persistent settings manager backed by a JSON file.
 """
-from core.config import SETTINGS_FILE, DEFAULT_SETTINGS
+from core.config import DEFAULT_SETTINGS, SETTINGS_FILE
 from core.persistence import load_json_file, save_json_file
 
 

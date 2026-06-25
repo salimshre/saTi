@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 
@@ -51,6 +52,15 @@ ALARMS_FILE      = os.path.join(CONFIG_DIR, "alarms.json")
 TIMERS_FILE      = os.path.join(CONFIG_DIR, "timers.json")
 STOPWATCHES_FILE = os.path.join(CONFIG_DIR, "stopwatches.json")
 SOUND_DIR        = os.path.join(CONFIG_DIR, "sounds")
+def _project_sound_dir() -> Path:
+    bundle_dir = getattr(sys, "_MEIPASS", None)
+    if bundle_dir:
+        return Path(bundle_dir) / "sounds"
+    return Path(__file__).resolve().parents[1] / "sounds"
+
+
+PROJECT_SOUND_DIR = _project_sound_dir()
+DEFAULT_ALARM_SOUND = PROJECT_SOUND_DIR / "ring1.wav"
 
 # Create directories on first import
 for _d in (CONFIG_DIR, SOUND_DIR):
@@ -60,6 +70,7 @@ DEFAULT_SETTINGS = {
     "theme":             "Dark",
     "transparency":      0.85,
     "volume":            100,
+    "alarm_sound":       str(DEFAULT_ALARM_SOUND) if DEFAULT_ALARM_SOUND.exists() else None,
     "increasing_volume": False,
     "snooze_minutes":    10,
     "tick_threshold":    10,

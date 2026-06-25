@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+.venv/
+venv/
+env/
+
+.sati_data/
+dist/
+build/
+*.spec.bak
+
+activity_*.csv
+
+# Old local backup tree; keep it out of package/review surface.
+bak/

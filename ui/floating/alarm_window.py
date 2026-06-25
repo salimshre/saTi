@@ -4,6 +4,7 @@ Floating window that shows countdown to the next alarm trigger.
 """
 import datetime
 import tkinter as tk
+
 from .base import FloatingWindow
 
 

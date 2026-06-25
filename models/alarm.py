@@ -81,7 +81,7 @@ class Alarm:
         }
 
     @staticmethod
-    def from_dict(data: dict) -> "Alarm":
+    def from_dict(data: dict) -> Alarm:
         raw_dt = data.get("date_time")
         return Alarm(
             id=data.get("id"),

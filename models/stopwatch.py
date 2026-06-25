@@ -75,7 +75,7 @@ class Stopwatch:
         }
 
     @staticmethod
-    def from_dict(d: dict) -> "Stopwatch":
+    def from_dict(d: dict) -> Stopwatch:
         sw = Stopwatch(
             id=d["id"],
             label=d["label"],

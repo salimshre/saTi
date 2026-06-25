@@ -2,10 +2,11 @@
 ui/floating/stopwatch_window.py
 Floating stopwatch window with lap display.
 """
-import time as time_mod
 import tkinter as tk
+
 from core.logger import activity_log
-from .base       import FloatingWindow
+
+from .base import FloatingWindow
 
 
 class StopwatchWindow(FloatingWindow):

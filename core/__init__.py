@@ -10,5 +10,6 @@ from .config import (
     TIMERS_FILE,
 )
 from .logger import activity_log
+from .ring import ring_controller
 from .sound import metronome_tick, player
 

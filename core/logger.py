@@ -5,6 +5,7 @@ Daily CSV activity logger shared across the whole application.
 import csv
 import datetime
 import os
+
 from .config import CONFIG_DIR
 
 
