@@ -118,6 +118,16 @@ class SettingsDialog(tk.Toplevel):
         ttk.Button(sound_buttons, text="Test Sound", command=self._test_sound).pack(side=tk.LEFT, padx=5)
         ttk.Button(sound_buttons, text="Stop Sound", command=ring_controller.stop).pack(side=tk.LEFT, padx=5)
 
+        # --- NEW: Ring duration ---
+        ttk.Label(sound_tab, text="Ring duration (minutes):").grid(
+            row=2, column=0, sticky="e", padx=5, pady=5)
+        self.ring_duration_var = tk.IntVar(value=settings.get("ring_duration_minutes", 5))
+        tk.Spinbox(
+            sound_tab, from_=0, to=60, textvariable=self.ring_duration_var, width=4
+        ).grid(row=2, column=1, sticky="w", padx=5, pady=5)
+        ttk.Label(sound_tab, text="(0 = infinite)").grid(
+            row=2, column=2, sticky="w", padx=5, pady=5)
+
         sound_tab.columnconfigure(1, weight=1)
 
         # ── Buttons ────────────────────────────────────────────────────
@@ -194,6 +204,7 @@ class SettingsDialog(tk.Toplevel):
         self.settings.set("font_size",        self.font_size_var.get())
         self.settings.set("enable_notifications", self.notify_var.get())
         self.settings.set("minimize_to_tray", self.tray_var.get())
+        self.settings.set("ring_duration_minutes", self.ring_duration_var.get())  # NEW
 
         self.theme_manager.current = THEMES[self.theme_var.get()]
         if self.app:
@@ -205,3 +216,4 @@ class SettingsDialog(tk.Toplevel):
     def _close(self) -> None:
         ring_controller.stop()
         self.destroy()
+        
