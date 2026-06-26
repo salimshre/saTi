@@ -33,9 +33,11 @@ class RingController:
             activity_log.log("ring_start_failed", name, str(exc))
 
     def stop(self, name: str = "") -> None:
+        """Stop the sound. If a name is given, stop only if no other named sounds remain."""
         if name:
             self._active_names.discard(name)
             if self._active_names:
+                # At least one other named sound is still active -> don't stop player.
                 return
         else:
             self._active_names.clear()

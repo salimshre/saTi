@@ -52,12 +52,12 @@ ALARMS_FILE      = os.path.join(CONFIG_DIR, "alarms.json")
 TIMERS_FILE      = os.path.join(CONFIG_DIR, "timers.json")
 STOPWATCHES_FILE = os.path.join(CONFIG_DIR, "stopwatches.json")
 SOUND_DIR        = os.path.join(CONFIG_DIR, "sounds")
+
 def _project_sound_dir() -> Path:
     bundle_dir = getattr(sys, "_MEIPASS", None)
     if bundle_dir:
         return Path(bundle_dir) / "sounds"
     return Path(__file__).resolve().parents[1] / "sounds"
-
 
 PROJECT_SOUND_DIR = _project_sound_dir()
 DEFAULT_ALARM_SOUND = PROJECT_SOUND_DIR / "ring1.wav"

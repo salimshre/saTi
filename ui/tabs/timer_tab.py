@@ -58,7 +58,7 @@ class TimerTab:
         rows_to_reselect = []
         for timer in self.app.timer_manager.timers:
             timer.sync_state()
-            rem = self._format_remaining(timer.current_remaining())
+            rem = self._format_remaining(timer.current_remaining(), timer)
             self.tree.insert(
                 "",
                 "end",
@@ -203,7 +203,7 @@ class TimerTab:
                 timer.id,
                 values=(
                     timer.label,
-                    self._format_remaining(timer.current_remaining(now)),
+                    self._format_remaining(timer.current_remaining(now), timer),
                     timer.status.capitalize(),
                     "Open" if timer.show_floating else "Close",
                 ),
@@ -221,8 +221,16 @@ class TimerTab:
             self.app.timer_manager.save()
 
     @staticmethod
-    def _format_remaining(remaining: float) -> str:
+    def _format_remaining(remaining: float, timer: Timer = None) -> str:
+        """Format remaining time. If timer is completed and overdue, show +MM:SS."""
+        if timer and timer.status == "completed":
+            overdue = timer.overdue_elapsed()
+            if overdue > 0:
+                total_secs = int(overdue)
+                mins, secs = divmod(total_secs, 60)
+                return f"+{mins:02d}:{secs:02d}"
         if remaining <= 0:
             return "00:00"
         total_secs = int(remaining)
         return f"{total_secs // 60:02d}:{total_secs % 60:02d}"
+        

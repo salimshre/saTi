@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from tkinter import messagebox
 
+from core.logger import activity_log
 from ui.app_meta import APP_NAME
 
 
 class TrayManager:
+    """Manage the system tray icon (best-effort). Falls back to window iconify."""
+
     def __init__(self, app) -> None:
         self.app = app
         self.icon = None
@@ -39,15 +42,16 @@ class TrayManager:
         if self.icon is not None:
             try:
                 self.icon.stop()
-            except Exception:
-                pass
+            except Exception as exc:
+                activity_log.log("tray_stop_failed", "", str(exc))
             self.icon = None
 
     def _create_icon(self) -> bool:
         try:
             import pystray
             from PIL import Image, ImageDraw
-        except Exception:
+        except Exception as exc:
+            activity_log.log("tray_import_failed", "", str(exc))
             return False
 
         if self.icon is not None:
@@ -75,3 +79,4 @@ class TrayManager:
 
     def _exit_app(self) -> None:
         self.app.root.after(0, self.app.quit_application)
+        

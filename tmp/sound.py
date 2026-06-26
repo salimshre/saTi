@@ -7,6 +7,8 @@ import shutil
 import subprocess
 import threading
 
+from core.logger import activity_log
+
 
 class SoundPlayer:
     """Play local files or stream URLs using the first available backend."""
@@ -39,8 +41,8 @@ class SoundPlayer:
                     flags |= winsound.SND_LOOP
                 winsound.PlaySound(source, flags)
                 return
-            except Exception:
-                pass
+            except Exception as exc:
+                activity_log.log("winsound_failed", "", str(exc))
 
         for backend in self.players:
             if shutil.which(backend):
@@ -51,15 +53,16 @@ class SoundPlayer:
                     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     self.file_processes.append(proc)
                     return
-                except Exception:
+                except Exception as exc:
+                    activity_log.log("player_start_failed", backend, str(exc))
                     continue
 
         if os.name == "nt":
             try:
                 os.startfile(source)  # type: ignore[attr-defined]
                 return
-            except Exception:
-                pass
+            except Exception as exc:
+                activity_log.log("os_startfile_failed", "", str(exc))
 
         self._fallback_ring(loop)
 
@@ -91,8 +94,8 @@ class SoundPlayer:
                 proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 self.radio_processes.append(proc)
                 return
-            except Exception:
-                pass
+            except Exception as exc:
+                activity_log.log("radio_play_failed", url, str(exc))
         self._fallback_beep()
 
     def stop_radio(self) -> None:
@@ -104,23 +107,22 @@ class SoundPlayer:
         if os.name == "nt":
             try:
                 import winsound
-
                 winsound.PlaySound(None, 0)
-            except Exception:
-                pass
+            except Exception as exc:
+                activity_log.log("winsound_stop_failed", "", str(exc))
         for proc in self.file_processes:
             try:
                 if proc.poll() is None:
                     proc.terminate()
-            except Exception:
-                pass
+            except Exception as exc:
+                activity_log.log("terminate_file_failed", "", str(exc))
         self.file_processes.clear()
         for proc in self.radio_processes:
             try:
                 if proc.poll() is None:
                     proc.terminate()
-            except Exception:
-                pass
+            except Exception as exc:
+                activity_log.log("terminate_radio_failed", "", str(exc))
         self.radio_processes.clear()
 
     def _fallback_ring(self, loop: bool = False) -> None:
@@ -143,7 +145,6 @@ class SoundPlayer:
         if os.name == "nt":
             try:
                 import winsound
-
                 winsound.MessageBeep()
                 return
             except Exception:
@@ -156,11 +157,9 @@ player = SoundPlayer()
 
 def metronome_tick() -> None:
     """Play a short tick sound using the host's simplest available option."""
-
     if os.name == "nt":
         try:
             import winsound
-
             winsound.Beep(1200, 120)
             return
         except Exception:
@@ -175,3 +174,4 @@ def metronome_tick() -> None:
             pass
 
     print("\a", end="", flush=True)
+    

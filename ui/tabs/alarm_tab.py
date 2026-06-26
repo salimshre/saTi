@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -29,10 +30,12 @@ class AlarmTab:
         ]:
             ttk.Button(toolbar, text=text, command=command).pack(side=tk.LEFT, padx=5)
 
-        columns = ("name", "type", "next_trigger", "enabled", "show")
+        # Columns: Name, Type, Time Left, Enabled, Floating
+        columns = ("name", "type", "time_left", "enabled", "show")
         self.tree = ttk.Treeview(self.frame, columns=columns, show="headings")
-        for column, heading in zip(columns, ("Name", "Type", "Next Trigger", "Enabled", "Floating"), strict=True):
+        for column, heading in zip(columns, ("Name", "Type", "Time Left", "Enabled", "Floating"), strict=True):
             self.tree.heading(column, text=heading)
+        self.tree.column("time_left", width=100)
         self.tree.column("show", width=60)
         self.tree.pack(expand=True, fill="both")
         self.tree.bind("<ButtonRelease-1>", self._on_tree_click)
@@ -52,12 +55,18 @@ class AlarmTab:
         rows_to_reselect = []
         self.app.alarm_manager.update()
         for alarm in self.app.alarm_manager.alarms:
-            nxt = alarm.next_trigger.strftime("%Y-%m-%d %H:%M") if alarm.next_trigger else "N/A"
+            time_left_str = self._format_time_left(alarm.next_trigger)
             self.tree.insert(
                 "",
                 "end",
                 iid=alarm.id,
-                values=(alarm.name, alarm.type, nxt, "Yes" if alarm.enabled else "No", "Open" if alarm.show_floating else "Close"),
+                values=(
+                    alarm.name,
+                    alarm.type,
+                    time_left_str,
+                    "Yes" if alarm.enabled else "No",
+                    "Open" if alarm.show_floating else "Close",
+                ),
             )
             if alarm.id in selected:
                 rows_to_reselect.append(alarm.id)
@@ -146,3 +155,37 @@ class AlarmTab:
         win = FloatingAlarmWindow(self.app.root, self.app.settings, self.app.theme_manager, alarm, app=self.app)
         self.app.open_alarm_windows[alarm.id] = win
         win.top.protocol("WM_DELETE_WINDOW", lambda _id=alarm.id: self.app.on_alarm_window_close(_id))
+
+    def refresh_runtime_state(self) -> None:
+        """Update the 'Time Left' column for all alarms (called every ~250ms)."""
+        for alarm in self.app.alarm_manager.alarms:
+            time_left_str = self._format_time_left(alarm.next_trigger)
+            self.tree.item(
+                alarm.id,
+                values=(
+                    alarm.name,
+                    alarm.type,
+                    time_left_str,
+                    "Yes" if alarm.enabled else "No",
+                    "Open" if alarm.show_floating else "Close",
+                ),
+            )
+
+    @staticmethod
+    def _format_time_left(next_trigger: datetime.datetime | None) -> str:
+        if next_trigger is None:
+            return "N/A"
+        delta = next_trigger - datetime.datetime.now()
+        total_secs = delta.total_seconds()
+        if total_secs <= 0:
+            return "Due"
+        if total_secs < 60:
+            return f"{int(total_secs)}s"
+        if total_secs < 3600:
+            mins = int(total_secs // 60)
+            secs = int(total_secs % 60)
+            return f"{mins:02d}:{secs:02d}"
+        hours = int(total_secs // 3600)
+        mins = int((total_secs % 3600) // 60)
+        return f"{hours}h {mins}m"
+        

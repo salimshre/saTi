@@ -40,8 +40,12 @@ class AppScheduler:
     def _tick_runtime_state(self) -> None:
         try:
             now = time_mod.time()
+            # Update timers and stopwatches
             self.app.timer_tab.refresh_runtime_state(now)
             self.app.stopwatch_tab.refresh_runtime_state(now)
+            # Also update alarm tab countdowns
+            self.app.alarm_tab.refresh_runtime_state()
         except Exception as exc:
             activity_log.log("scheduler_runtime_error", details=str(exc))
         self._runtime_after_id = self.app.root.after(250, self._tick_runtime_state)
+        

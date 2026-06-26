@@ -6,6 +6,7 @@ import tkinter as tk
 
 
 def apply_app_icon(root: tk.Tk) -> None:
+    """Create a simple 16x16 icon and set it as the window icon."""
     image = tk.PhotoImage(width=16, height=16)
 
     for x in range(16):

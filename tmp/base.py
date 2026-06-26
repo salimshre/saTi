@@ -18,6 +18,7 @@ BUG FIXES applied here
 """
 import tkinter as tk
 from tkinter import ttk
+from core.logger import activity_log
 
 
 class FloatingWindow:
@@ -191,12 +192,11 @@ class FloatingWindow:
     # FIX 2 – Use tk_popup (proper grab + cleanup) and never call
     #          menu.destroy() from inside an event handler.
     def _show_context_menu(self, event) -> None:
-        # Destroy any leftover menu from a previous right-click
         if self._ctx_menu is not None:
             try:
                 self._ctx_menu.destroy()
-            except Exception:
-                pass
+            except Exception as exc:
+                activity_log.log("context_menu_cleanup_failed", "", str(exc))
             self._ctx_menu = None
 
         menu = tk.Menu(self.top, tearoff=0)
