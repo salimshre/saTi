@@ -59,6 +59,10 @@ class AlarmClockApp:
         file_menu = tk.Menu(menu_bar, tearoff=0)
         file_menu.add_command(label="Settings", command=self.open_settings)
         file_menu.add_command(label="Minimize to Tray", command=self.minimize_to_tray)
+        file_menu.add_separator()
+        file_menu.add_command(label="Export Data...", command=self.export_data)
+        file_menu.add_command(label="Import Data...", command=self.import_data)
+        file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.quit_application)
         menu_bar.add_cascade(label="File", menu=file_menu)
 
@@ -148,6 +152,72 @@ class AlarmClockApp:
             "Built with Python and tkinter.",
         )
 
+    def export_data(self) -> None:
+        from tkinter import filedialog
+        from core.data_import_export import export_data
+
+        filepath = filedialog.asksaveasfilename(
+            parent=self.root,
+            title="Export SaTi Data",
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+        )
+        if not filepath:
+            return
+        success = export_data(
+            self.alarm_manager,
+            self.timer_manager,
+            self.stopwatch_manager,
+            self.settings,
+            filepath
+        )
+        if success:
+            messagebox.showinfo("Export Successful", f"Data exported to:\n{filepath}")
+        else:
+            messagebox.showerror("Export Failed", "An error occurred during export. Check the log for details.")
+
+    def import_data(self) -> None:
+        from tkinter import filedialog, messagebox
+        from core.data_import_export import import_data
+        from ui.dialogs import ask_import_mode
+
+        filepath = filedialog.askopenfilename(
+            parent=self.root,
+            title="Import SaTi Data",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+        )
+        if not filepath:
+            return
+
+        mode = ask_import_mode(self.root)
+        if mode is None:
+            return
+
+        if mode == "replace":
+            if not messagebox.askyesno(
+                "Confirm Replace",
+                "This will REPLACE all your current data (alarms, timers, stopwatches, settings) with the imported data.\n\nAre you sure you want to continue?"
+            ):
+                return
+
+        success = import_data(
+            self.alarm_manager,
+            self.timer_manager,
+            self.stopwatch_manager,
+            self.settings,
+            filepath,
+            mode
+        )
+        if success:
+            # Refresh all tabs
+            self.load_all_lists()
+            # Reload theme
+            self.theme_manager.current = self.settings.get("theme", "Dark")
+            self.theme_manager.apply_all(self.root)
+            messagebox.showinfo("Import Successful", f"Data imported from:\n{filepath}\nMode: {mode.capitalize()}")
+        else:
+            messagebox.showerror("Import Failed", "An error occurred during import. Check the log for details.")
+
     def on_alarm_window_close(self, alarm_id: str) -> None:
         win = self.open_alarm_windows.pop(alarm_id, None)
         if win:
@@ -184,3 +254,4 @@ class AlarmClockApp:
 
     def on_close(self) -> None:
         self.quit_application()
+        
