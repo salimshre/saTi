@@ -1,4 +1,0 @@
-core
-models
-scripts
-ui

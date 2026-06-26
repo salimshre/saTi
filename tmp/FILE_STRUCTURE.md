@@ -1,11 +1,11 @@
 ﻿# Repository file structure
-Generated: 2026-06-26T23:05:13+05:45
+Generated: 2026-06-26T23:33:09+05:45
 A cleaner, hierarchical view of the repository. Directories end with '/'.
 Cache folders (__pycache__, .pytest_cache, .ruff_cache) are summarised.
 Excluded: .git, .agents, FILE_STRUCTURE.md.
 ## Summary
 - Directories: 34
-- Files: 110
+- Files: 112
 ## Tree
 ├── .gitattributes (68 B)
 ├── .gitignore (249 B)
@@ -81,10 +81,11 @@ Excluded: .git, .agents, FILE_STRUCTURE.md.
 ├── core/
 │   ├── __init__.py (335 B)
 │   ├── config.py (2.42 KB)
+│   ├── data_import_export.py (4.12 KB)
 │   ├── logger.py (1.45 KB)
 │   ├── notifications.py (413 B)
 │   ├── persistence.py (1.02 KB)
-│   ├── ring.py (1.59 KB)
+│   ├── ring.py (1.63 KB)
 │   ├── sound.py (6.07 KB)
 │   └── __pycache__/ (summary: compiled/pycache)
 ├── models/
@@ -125,16 +126,17 @@ Excluded: .git, .agents, FILE_STRUCTURE.md.
 └── ui/
     ├── __init__.py (121 B)
     ├── alarm_popup.py (3.46 KB)
-    ├── app.py (6.70 KB)
+    ├── app.py (9.29 KB)
     ├── app_meta.py (72 B)
     ├── icon.py (802 B)
-    ├── scheduler.py (1.79 KB)
+    ├── scheduler.py (1.84 KB)
     ├── themes.py (3.67 KB)
     ├── tray.py (2.51 KB)
     ├── __pycache__/ (summary: compiled/pycache)
     ├── dialogs/
-    │   ├── __init__.py (195 B)
+    │   ├── __init__.py (413 B)
     │   ├── alarm_edit.py (9.83 KB)
+    │   ├── import_dialog.py (1.08 KB)
     │   ├── settings_dialog.py (9.70 KB)
     │   ├── timer_edit.py (2.25 KB)
     │   └── __pycache__/ (summary: compiled/pycache)
