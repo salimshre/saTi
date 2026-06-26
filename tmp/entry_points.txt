@@ -1,0 +1,3 @@
+[console_scripts]
+sati = main:main
+sati-build = scripts.build_desktop:main
