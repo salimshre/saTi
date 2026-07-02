@@ -64,6 +64,11 @@ class AlarmClockApp:
         file_menu.add_separator()
         file_menu.add_command(label="Export Data...", command=self.export_data)
         file_menu.add_command(label="Import Data...", command=self.import_data)
+
+        # New: Restart item (after Import Data, before Exit)
+        file_menu.add_separator()
+        file_menu.add_command(label="Restart", command=self.restart_application)
+
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.quit_application)
         menu_bar.add_cascade(label="File", menu=file_menu)
@@ -305,5 +310,4 @@ class AlarmClockApp:
 
     def on_close(self) -> None:
         self.quit_application()
-
         
