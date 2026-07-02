@@ -89,6 +89,27 @@ class SettingsDialog(tk.Toplevel):
         tk.Checkbutton(behave, text="Minimize to tray on close",
                        variable=self.tray_var).grid(row=5, column=0, columnspan=2, pady=4)
 
+        # ---- Blink settings (new) ----
+        # Enable/disable blinking
+        self.blink_enabled_var = tk.BooleanVar(value=settings.get("blink_enabled", True))
+        tk.Checkbutton(behave, text="Enable blinking for overdue timers",
+                       variable=self.blink_enabled_var).grid(
+            row=6, column=0, columnspan=2, sticky="w", padx=20, pady=4)
+
+        ttk.Label(behave, text="Blink interval (ms):").grid(
+            row=7, column=0, sticky="e", padx=5, pady=5)
+        self.blink_interval_var = tk.IntVar(value=settings.get("blink_interval_ms", 500))
+        tk.Spinbox(behave, from_=100, to=2000, textvariable=self.blink_interval_var,
+                   width=6).grid(row=7, column=1, sticky="w", padx=5, pady=5)
+
+        ttk.Label(behave, text="Blink max duration (seconds):").grid(
+            row=8, column=0, sticky="e", padx=5, pady=5)
+        self.blink_max_var = tk.IntVar(value=settings.get("blink_max_seconds", 0))
+        tk.Spinbox(behave, from_=0, to=3600, textvariable=self.blink_max_var,
+                   width=6).grid(row=8, column=1, sticky="w", padx=5, pady=5)
+        ttk.Label(behave, text="(0 = infinite)").grid(
+            row=8, column=2, sticky="w", padx=5, pady=5)
+
         behave.columnconfigure(1, weight=1)
 
         # ── Sound tab ─────────────────────────────────────────────────
@@ -118,7 +139,7 @@ class SettingsDialog(tk.Toplevel):
         ttk.Button(sound_buttons, text="Test Sound", command=self._test_sound).pack(side=tk.LEFT, padx=5)
         ttk.Button(sound_buttons, text="Stop Sound", command=ring_controller.stop).pack(side=tk.LEFT, padx=5)
 
-        # --- NEW: Ring duration ---
+        # --- Ring duration ---
         ttk.Label(sound_tab, text="Ring duration (minutes):").grid(
             row=2, column=0, sticky="e", padx=5, pady=5)
         self.ring_duration_var = tk.IntVar(value=settings.get("ring_duration_minutes", 5))
@@ -204,11 +225,17 @@ class SettingsDialog(tk.Toplevel):
         self.settings.set("font_size",        self.font_size_var.get())
         self.settings.set("enable_notifications", self.notify_var.get())
         self.settings.set("minimize_to_tray", self.tray_var.get())
-        self.settings.set("ring_duration_minutes", self.ring_duration_var.get())  # NEW
+        self.settings.set("ring_duration_minutes", self.ring_duration_var.get())
+        # Blink settings
+        self.settings.set("blink_enabled",    self.blink_enabled_var.get())
+        self.settings.set("blink_interval_ms", self.blink_interval_var.get())
+        self.settings.set("blink_max_seconds", self.blink_max_var.get())
 
         self.theme_manager.current = THEMES[self.theme_var.get()]
         if self.app:
             self.app.theme_manager.apply_all(self.app.root)
+            # Apply new blink settings to all open countdown windows
+            self.app.update_all_timer_blink_settings()
         if self.apply_callback:
             self.apply_callback(self.trans_var.get())
         self._close()
@@ -216,4 +243,5 @@ class SettingsDialog(tk.Toplevel):
     def _close(self) -> None:
         ring_controller.stop()
         self.destroy()
+
         

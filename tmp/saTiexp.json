@@ -1,0 +1,95 @@
+{
+  "settings": {
+    "theme": "Dark",
+    "transparency": 0.85,
+    "volume": 100,
+    "alarm_sound": "C:\\Users\\StudyAcer\\Documents\\GitHub\\saTi\\sounds\\ring2.wav",
+    "increasing_volume": false,
+    "snooze_minutes": 10,
+    "tick_threshold": 10,
+    "always_on_top": true,
+    "font_family": "Arial",
+    "font_size": 12,
+    "enable_notifications": true,
+    "minimize_to_tray": true
+  },
+  "alarms": [
+    {
+      "id": "fb3e2f71-b47d-4f91-8d4e-904b3846f816",
+      "name": "Alarm",
+      "type": "one-time",
+      "date_time": "2026-06-27T00:45:00",
+      "days_of_week": [],
+      "day_of_month": null,
+      "month": null,
+      "year": null,
+      "custom_dates": [],
+      "enabled": true,
+      "sound_file": null,
+      "radio_url": null,
+      "actions": [],
+      "snooze_minutes": 10,
+      "repeat_until_dismissed": false,
+      "advance_warning_days": 0,
+      "show_floating": true,
+      "locked": false,
+      "floating_geometry": "80x80+1230+636",
+      "floating_alpha": null
+    }
+  ],
+  "timers": [
+    {
+      "id": "3d7910d3-b0e8-47c8-aa6a-8029c4e439ab",
+      "label": "study",
+      "duration": 1800.0,
+      "remaining": 1018.9903674125671,
+      "status": "running",
+      "show_floating": true,
+      "locked": false,
+      "floating_geometry": "80x80+1232+548",
+      "floating_alpha": null,
+      "last_started_at": 1782495891.888708,
+      "completed_at": null
+    },
+    {
+      "id": "4f81e721-3835-41c2-8503-b00329fe4b75",
+      "label": "break",
+      "duration": 300.0,
+      "remaining": 300.0,
+      "status": "stopped",
+      "show_floating": true,
+      "locked": false,
+      "floating_geometry": "80x80+1231+472",
+      "floating_alpha": null,
+      "last_started_at": null,
+      "completed_at": null
+    },
+    {
+      "id": "717d1551-48ba-4105-990f-7472a278f719",
+      "label": "test",
+      "duration": 15.0,
+      "remaining": 15.0,
+      "status": "stopped",
+      "show_floating": true,
+      "locked": false,
+      "floating_geometry": "80x80+1231+313",
+      "floating_alpha": null,
+      "last_started_at": null,
+      "completed_at": null
+    }
+  ],
+  "stopwatches": [
+    {
+      "id": "ae68bba6-a90a-42a4-aa4f-274d138dc8e4",
+      "label": "lap",
+      "status": "running",
+      "start_time": 1782495198.7797353,
+      "elapsed_paused": 0.0,
+      "lap_times": [],
+      "show_floating": true,
+      "locked": false,
+      "floating_geometry": "80x80+1232+393",
+      "floating_alpha": null
+    }
+  ]
+}

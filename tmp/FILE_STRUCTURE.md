@@ -1,11 +1,11 @@
 ﻿# Repository file structure
-Generated: 2026-07-02T09:57:26+05:45
+Generated: 2026-07-02T12:27:43+05:45
 A cleaner, hierarchical view of the repository. Directories end with '/'.
 Cache folders (__pycache__, .pytest_cache, .ruff_cache) are summarised.
 Excluded: .git, .agents, FILE_STRUCTURE.md.
 ## Summary
 - Directories: 20
-- Files: 68
+- Files: 70
 ## Tree
 ├── .gitattributes (68 B)
 ├── .gitignore (273 B)
@@ -60,6 +60,7 @@ Excluded: .git, .agents, FILE_STRUCTURE.md.
 │   ├── test_alarm_model.py (2.30 KB)
 │   ├── test_alarm_popup.py (2.38 KB)
 │   ├── test_countdown_window.py (794 B)
+│   ├── test_dock_manager.py (9.75 KB)
 │   ├── test_persistence.py (814 B)
 │   ├── test_stopwatch_model.py (740 B)
 │   ├── test_timer_model.py (3.53 KB)
@@ -85,8 +86,9 @@ Excluded: .git, .agents, FILE_STRUCTURE.md.
     ├── floating/
     │   ├── __init__.py (204 B)
     │   ├── alarm_window.py (3.56 KB)
-    │   ├── base.py (16.04 KB)
+    │   ├── base.py (18.77 KB)
     │   ├── countdown.py (10.21 KB)
+    │   ├── dock_manager.py (10.69 KB)
     │   ├── stopwatch_window.py (6.32 KB)
     │   └── __pycache__/ (summary: compiled/pycache)
     └── tabs/
