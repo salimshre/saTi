@@ -1,5 +1,5 @@
 ﻿# Repository file structure
-Generated: 2026-07-02T12:27:43+05:45
+Generated: 2026-07-02T13:17:03+05:45
 A cleaner, hierarchical view of the repository. Directories end with '/'.
 Cache folders (__pycache__, .pytest_cache, .ruff_cache) are summarised.
 Excluded: .git, .agents, FILE_STRUCTURE.md.
@@ -32,7 +32,7 @@ Excluded: .git, .agents, FILE_STRUCTURE.md.
 │   └── logo.png (1.53 MB)
 ├── core/
 │   ├── __init__.py (338 B)
-│   ├── config.py (2.47 KB)
+│   ├── config.py (2.62 KB)
 │   ├── data_import_export.py (4.12 KB)
 │   ├── logger.py (1.45 KB)
 │   ├── notifications.py (413 B)
@@ -69,7 +69,7 @@ Excluded: .git, .agents, FILE_STRUCTURE.md.
 └── ui/
     ├── __init__.py (121 B)
     ├── alarm_popup.py (3.51 KB)
-    ├── app.py (11.50 KB)
+    ├── app.py (11.98 KB)
     ├── app_meta.py (72 B)
     ├── icon.py (1.53 KB)
     ├── scheduler.py (1.84 KB)
@@ -80,14 +80,14 @@ Excluded: .git, .agents, FILE_STRUCTURE.md.
     │   ├── __init__.py (413 B)
     │   ├── alarm_edit.py (9.83 KB)
     │   ├── import_dialog.py (1.08 KB)
-    │   ├── settings_dialog.py (10.43 KB)
+    │   ├── settings_dialog.py (12.01 KB)
     │   ├── timer_edit.py (2.25 KB)
     │   └── __pycache__/ (summary: compiled/pycache)
     ├── floating/
     │   ├── __init__.py (204 B)
     │   ├── alarm_window.py (3.56 KB)
     │   ├── base.py (18.77 KB)
-    │   ├── countdown.py (10.21 KB)
+    │   ├── countdown.py (13.44 KB)
     │   ├── dock_manager.py (10.69 KB)
     │   ├── stopwatch_window.py (6.32 KB)
     │   └── __pycache__/ (summary: compiled/pycache)

@@ -142,6 +142,15 @@ class AlarmClockApp:
                     win.top.attributes("-alpha", alpha)
         self.settings.set("transparency", alpha)
 
+    def update_all_timer_blink_settings(self) -> None:
+        """Apply the current blink settings to all open countdown windows."""
+        enabled = self.settings.get("blink_enabled", True)
+        interval = self.settings.get("blink_interval_ms", 500)
+        max_sec = self.settings.get("blink_max_seconds", 0)
+        for win in self.open_timer_windows.values():
+            if hasattr(win, 'update_blink_settings'):
+                win.update_blink_settings(enabled, interval, max_sec)
+
     def open_settings(self) -> None:
         from ui.dialogs import SettingsDialog
 
@@ -310,4 +319,3 @@ class AlarmClockApp:
 
     def on_close(self) -> None:
         self.quit_application()
-        

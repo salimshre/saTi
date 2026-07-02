@@ -31,7 +31,16 @@ class CountdownWindow(FloatingWindow):
         self._muted = False
         self.completed_at = timer_obj.completed_at
         self._completion_handled = False
-        self._preserve_on_destroy = False   # <-- NEW
+        self._preserve_on_destroy = False
+
+        # ---- blink state ----
+        self._blinking = False
+        self._blink_after_id = None
+        self._blink_original_bg = self.canvas["bg"]  # store original background
+        self._blink_enabled = settings.get("blink_enabled", True)
+        self._blink_interval = settings.get("blink_interval_ms", 500)
+        self._blink_max_seconds = settings.get("blink_max_seconds", 0)
+        self._blink_start_time = 0.0
 
         if timer_obj.floating_geometry:
             try:
@@ -44,6 +53,24 @@ class CountdownWindow(FloatingWindow):
         self.apply_lock_state(self.locked)
         self._schedule_initial_draw()
         self.update_loop()
+
+    def update_blink_settings(self, enabled: bool, interval_ms: int, max_seconds: int) -> None:
+        """Update the blink settings while the window is open."""
+        self._blink_enabled = enabled
+        self._blink_interval = interval_ms
+        self._blink_max_seconds = max_seconds
+
+        # If currently blinking and blinking is disabled, stop it
+        if self._blinking and not enabled:
+            self._stop_blinking()
+        # If blinking is enabled and we're in a completed state but not blinking, restart
+        elif enabled and self.timer.status == "completed" and not self._blinking and not self._muted:
+            self._start_blinking()
+        # If already blinking, restart the cycle to apply new interval
+        elif self._blinking and enabled:
+            # Restart the blink loop with new interval
+            self._stop_blinking()
+            self._start_blinking()
 
     def update_loop(self) -> None:
         now = time_mod.time()
@@ -71,6 +98,7 @@ class CountdownWindow(FloatingWindow):
             self._completion_handled = False
             self.completed_at = None
             self._muted = False
+            self._stop_blinking()  # stop blinking when resumed
             activity_log.log("timer_started", self.timer.label,
                              f"remaining={self.time_left}s")
         self.paused = self.timer.status != "running"
@@ -91,6 +119,7 @@ class CountdownWindow(FloatingWindow):
         self._muted = False
         self.time_left = self.timer.current_remaining()
         self.paused = True
+        self._stop_blinking()
         activity_log.log("timer_reset", self.timer.label,
                          f"duration={self.timer.duration}s")
         if self.app:
@@ -149,17 +178,63 @@ class CountdownWindow(FloatingWindow):
                              lambda e: self._show_context_menu(e))
 
     def flash(self) -> None:
-        orig = self.canvas["bg"]
+        # Kept for compatibility but replaced by persistent blinking
+        self._start_blinking()
 
-        def _flash(count):
-            if count <= 0:
-                self.canvas["bg"] = orig
+    # ---------- Persistent Blinking ----------
+    def _start_blinking(self) -> None:
+        """Start the persistent red blink cycle if blinking is enabled."""
+        if not self._blink_enabled:
+            return
+        if self._blinking:
+            return
+        if self._muted:
+            return
+        self._blinking = True
+        self._blink_start_time = time_mod.time()
+        self._blink_original_bg = self.canvas["bg"]  # capture current background
+        self._blink_step()
+
+    def _blink_step(self) -> None:
+        """Toggle canvas background and schedule next step."""
+        if not self._blinking:
+            return
+
+        # Check if we have exceeded max duration (if set)
+        if self._blink_max_seconds > 0:
+            elapsed = time_mod.time() - self._blink_start_time
+            if elapsed >= self._blink_max_seconds:
+                self._stop_blinking()
                 return
-            self.canvas["bg"] = "#ff4444" if count % 2 else orig
-            self.top.after(200, lambda: _flash(count - 1))
 
-        _flash(6)
+        # Toggle background between red and original
+        current_bg = self.canvas["bg"]
+        if current_bg == "#ff0000" or current_bg == "red":
+            self.canvas["bg"] = self._blink_original_bg
+        else:
+            self.canvas["bg"] = "#ff0000"
 
+        # Schedule next toggle
+        self._blink_after_id = self.top.after(
+            self._blink_interval, self._blink_step
+        )
+
+    def _stop_blinking(self) -> None:
+        """Stop the blink cycle and restore original background."""
+        self._blinking = False
+        if self._blink_after_id:
+            try:
+                self.top.after_cancel(self._blink_after_id)
+            except Exception:
+                pass
+            self._blink_after_id = None
+        # Restore original background
+        try:
+            self.canvas["bg"] = self._blink_original_bg
+        except Exception:
+            pass
+
+    # ---------- Completion handling ----------
     def _handle_completion(self, completed_at: float | None = None) -> None:
         if self._completion_handled:
             self._show_overdue_popup()
@@ -171,7 +246,8 @@ class CountdownWindow(FloatingWindow):
         ring_controller.start(self.settings, loop=True, name=self.timer.label)
         activity_log.log("timer_completed", self.timer.label,
                          f"duration={self.timer.duration}s")
-        self.flash()
+        # Start persistent blinking (only if enabled)
+        self._start_blinking()
         self._show_overdue_popup()
         if self.app:
             self.app.timer_manager.save()
@@ -217,6 +293,7 @@ class CountdownWindow(FloatingWindow):
 
     def _mute_overdue_popup(self) -> None:
         self._muted = True
+        self._stop_blinking()  # stop blinking when muted
         try:
             ring_controller.stop(self.timer.label)
             activity_log.log("timer_muted", self.timer.label, "")
@@ -241,10 +318,11 @@ class CountdownWindow(FloatingWindow):
                 pass
             self.overdue_popup = None
             self._overdue_label = None
+        self._stop_blinking()  # stop blinking when popup is closed
 
     def on_destroy(self) -> None:
+        self._stop_blinking()  # ensure blinking stops
         if self._preserve_on_destroy:
-            # Preserve the window state for restart – do not clear floating flag
             return
 
         if self.timer:

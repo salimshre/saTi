@@ -81,5 +81,8 @@ DEFAULT_SETTINGS = {
     "font_size":         12,
     "enable_notifications": True,
     "minimize_to_tray":  True,
-    "ring_duration_minutes": 5,   # <--- NEW
+    "ring_duration_minutes": 5,
+    "blink_enabled":     True,
+    "blink_interval_ms": 500,
+    "blink_max_seconds": 0,          # 0 = infinite, otherwise blink stops after this many seconds
 }
