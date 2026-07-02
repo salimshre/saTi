@@ -17,7 +17,6 @@ class FloatingAlarmWindow(FloatingWindow):
         self.locked       = alarm.locked
         self.custom_alpha = alarm.floating_alpha
         self.time_left    = 0
-        self._preserve_on_destroy = False   # <-- NEW
 
         if alarm.floating_geometry:
             try:
@@ -76,10 +75,6 @@ class FloatingAlarmWindow(FloatingWindow):
                              lambda e: self._show_context_menu(e))
 
     def on_destroy(self) -> None:
-        if self._preserve_on_destroy:
-            # Preserve the window state for restart – do not clear floating flag
-            return
-
         if self.alarm:
             if self.app:
                 self.app.open_alarm_windows.pop(self.alarm.id, None)
@@ -89,5 +84,3 @@ class FloatingAlarmWindow(FloatingWindow):
             self.alarm.floating_alpha = self.custom_alpha
             if self.app:
                 self.app.alarm_manager.save()
-
-                

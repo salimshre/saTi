@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import sys
-import subprocess
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -211,7 +209,9 @@ class AlarmClockApp:
             mode
         )
         if success:
+            # Refresh all tabs
             self.load_all_lists()
+            # Reload theme
             self.theme_manager.current = self.settings.get("theme", "Dark")
             self.theme_manager.apply_all(self.root)
             messagebox.showinfo("Import Successful", f"Data imported from:\n{filepath}\nMode: {mode.capitalize()}")
@@ -236,74 +236,22 @@ class AlarmClockApp:
             win.destroy()
         self.stopwatch_tab.load_list()
 
-    # ------------------------------------------------------------------
-    # Cleanup and restart logic
-    # ------------------------------------------------------------------
-
-    def _do_cleanup(self, restart: bool = False) -> None:
-        """Perform all cleanup tasks. If restart is True, launch a new process before exiting."""
-        # Stop the scheduler
+    def quit_application(self) -> None:
         self.scheduler.stop()
-
-        # Stop the tray
         self.tray.stop()
-
-        # Save all data (floating windows will have their flags preserved)
         self.alarm_manager.save()
         self.timer_manager.save()
         self.stopwatch_manager.save()
         self.settings.save()
-
-        # Stop any ringing sounds
         ring_controller.stop()
-
-        # Prepare floating windows for preservation (if restarting)
-        # We want to keep show_floating=True, so we set a flag and save geometry
-        for win in list(self.open_alarm_windows.values()):
-            win._preserve_on_destroy = True
-            win.save_geometry()   # ensures geometry is saved before destroy
-        for win in list(self.open_timer_windows.values()):
-            win._preserve_on_destroy = True
-            win.save_geometry()
-        for win in list(self.open_stopwatch_windows.values()):
-            win._preserve_on_destroy = True
-            win.save_geometry()
-
-        # Now destroy the windows (they won't clear show_floating)
         for win in list(self.open_alarm_windows.values()):
             win.destroy()
         for win in list(self.open_timer_windows.values()):
             win.destroy()
         for win in list(self.open_stopwatch_windows.values()):
             win.destroy()
-
-        # If restarting, launch the new process now (before destroying root)
-        if restart:
-            if getattr(sys, 'frozen', False):
-                args = [sys.executable]
-            else:
-                args = [sys.executable] + sys.argv
-            try:
-                subprocess.Popen(args, creationflags=subprocess.CREATE_NEW_CONSOLE if sys.platform == "win32" else 0)
-            except Exception as exc:
-                from core.logger import activity_log
-                activity_log.log("restart_launch_failed", "", str(exc))
-
-        # Destroy the root window (this ends the main loop)
         self.root.destroy()
-
-        # Exit the process
-        sys.exit(0)
-
-    def quit_application(self) -> None:
-        """Quit the application without restarting."""
-        self._do_cleanup(restart=False)
-
-    def restart_application(self) -> None:
-        """Restart the application cleanly."""
-        self._do_cleanup(restart=True)
 
     def on_close(self) -> None:
         self.quit_application()
-
         

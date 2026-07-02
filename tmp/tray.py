@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import sys
-import subprocess
 from tkinter import messagebox
 
 from core.logger import activity_log
@@ -66,7 +64,6 @@ class TrayManager:
 
         menu = pystray.Menu(
             pystray.MenuItem("Show", lambda icon, item: self._show_window()),
-            pystray.MenuItem("Restart", lambda icon, item: self._restart_app()),  # <-- NEW
             pystray.MenuItem("Exit", lambda icon, item: self._exit_app()),
         )
         self.icon = pystray.Icon("sati", image, APP_NAME, menu)
@@ -82,8 +79,4 @@ class TrayManager:
 
     def _exit_app(self) -> None:
         self.app.root.after(0, self.app.quit_application)
-
-    def _restart_app(self) -> None:
-        """Trigger a full application restart."""
-        self.app.root.after(0, self.app.restart_application)
         

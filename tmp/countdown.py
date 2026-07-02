@@ -21,7 +21,7 @@ class CountdownWindow(FloatingWindow):
         self.timer = timer_obj
         self.tick_threshold = tick_threshold or settings.get("tick_threshold", 10)
         self.paused = timer_obj.status in ("paused", "stopped")
-        self.time_left = timer_obj.current_remaining()
+        self.time_left = timer_obj.current_remaining()          # float
         self.timer.show_floating = True
         self.locked = timer_obj.locked
         self.custom_alpha = timer_obj.floating_alpha
@@ -31,7 +31,6 @@ class CountdownWindow(FloatingWindow):
         self._muted = False
         self.completed_at = timer_obj.completed_at
         self._completion_handled = False
-        self._preserve_on_destroy = False   # <-- NEW
 
         if timer_obj.floating_geometry:
             try:
@@ -45,6 +44,7 @@ class CountdownWindow(FloatingWindow):
         self._schedule_initial_draw()
         self.update_loop()
 
+    # ── Update loop ────────────────────────────────────────────────────
     def update_loop(self) -> None:
         now = time_mod.time()
         previous_remaining = self.time_left
@@ -61,6 +61,7 @@ class CountdownWindow(FloatingWindow):
         self.draw()
         self.after_id = self.top.after(1000, self.update_loop)
 
+    # ── Controls ───────────────────────────────────────────────────────
     def toggle_pause(self) -> None:
         if self.timer.status == "running":
             self.timer.pause()
@@ -81,6 +82,7 @@ class CountdownWindow(FloatingWindow):
 
     def reset(self) -> None:
         self.timer.reset()
+        # Close overdue popup and stop sound if open
         try:
             if self.overdue_popup:
                 self._close_overdue_popup()
@@ -97,6 +99,7 @@ class CountdownWindow(FloatingWindow):
             self.app.timer_manager.save()
         self.draw()
 
+    # ── Drawing ────────────────────────────────────────────────────────
     def _draw_button(self, x: int, y: int, w: int, h: int,
                      text: str, command) -> None:
         self.canvas.create_rectangle(x, y, x + w, y + h,
@@ -115,20 +118,24 @@ class CountdownWindow(FloatingWindow):
         if w < 10 or h < 10:
             return
 
+        # Close button
         if not self.locked:
             self.canvas.create_text(w - 10, 10, text="✕",
                                     fill="red", font=("Arial", 12, "bold"),
                                     anchor="ne")
+        # Label
         if self.timer.label:
             self.canvas.create_text(w // 2, 20, text=self.timer.label,
                                     fill=self.theme_manager.current["fg"],
                                     font=("Arial", 10))
+        # Time display – use int() for display only
         mins, secs = divmod(int(self.time_left), 60)
         fs = max(10, int(min(w, h) * 0.18))
         self.canvas.create_text(w // 2, h // 2,
                                 text=f"{mins:02d}:{secs:02d}",
                                 fill="white",
                                 font=("Arial", fs, "bold"))
+        # Buttons
         if not self.locked:
             bw = max(40, min(80, int(w * 0.25)))
             bh = max(20, min(30, int(h * 0.1)))
@@ -137,14 +144,17 @@ class CountdownWindow(FloatingWindow):
             self._draw_button(w // 4 - bw // 2,   by, bw, bh, sym,  self.toggle_pause)
             self._draw_button(3 * w // 4 - bw // 2, by, bw, bh, "↺", self.reset)
 
+        # Resize grip
         if not self.fullscreen and not self.locked:
             self.canvas.create_polygon(w, h, w - self.GRIP, h, w, h - self.GRIP,
                                        fill="#555", outline="")
 
+        # Lock icon when locked
         if self.locked:
             self.canvas.create_text(w // 2, h - 15, text="🔒",
                                     fill="#aaa", font=("Arial", 10))
 
+        # Bind right-click on canvas background
         self.canvas.tag_bind("all", "<Button-3>",
                              lambda e: self._show_context_menu(e))
 
@@ -162,6 +172,7 @@ class CountdownWindow(FloatingWindow):
 
     def _handle_completion(self, completed_at: float | None = None) -> None:
         if self._completion_handled:
+            # Already handled, but we still want to show the overdue popup if not present
             self._show_overdue_popup()
             return
         self._completion_handled = True
@@ -243,11 +254,8 @@ class CountdownWindow(FloatingWindow):
             self._overdue_label = None
 
     def on_destroy(self) -> None:
-        if self._preserve_on_destroy:
-            # Preserve the window state for restart – do not clear floating flag
-            return
-
         if self.timer:
+            # Close overdue popup and stop any playing sound
             try:
                 self._close_overdue_popup()
             except Exception:
@@ -262,5 +270,3 @@ class CountdownWindow(FloatingWindow):
             self.timer.floating_alpha = self.custom_alpha
             if self.app:
                 self.app.timer_manager.save()
-
-                

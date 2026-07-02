@@ -18,7 +18,6 @@ class StopwatchWindow(FloatingWindow):
         self.stopwatch.show_floating = True
         self.locked       = stopwatch.locked
         self.custom_alpha = stopwatch.floating_alpha
-        self._preserve_on_destroy = False   # <-- NEW
 
         if stopwatch.floating_geometry:
             try:
@@ -32,13 +31,16 @@ class StopwatchWindow(FloatingWindow):
         self._schedule_initial_draw()
         self._start_updater()
 
+    # ── Repaint every 50 ms ────────────────────────────────────────────
     def _start_updater(self) -> None:
         self.draw()
         self.after_id = self.top.after(50, self._start_updater)
 
+    # ── Elapsed helper ─────────────────────────────────────────────────
     def _elapsed(self) -> float:
         return self.stopwatch.elapsed()
 
+    # ── Controls ───────────────────────────────────────────────────────
     def _toggle_start_stop(self) -> None:
         sw = self.stopwatch
         if sw.status == "running":
@@ -69,6 +71,7 @@ class StopwatchWindow(FloatingWindow):
             if self.app:
                 self.app.stopwatch_manager.save()
 
+    # ── Drawing ────────────────────────────────────────────────────────
     def _draw_button(self, x, y, w, h, text, command) -> None:
         self.canvas.create_rectangle(x, y, x + w, y + h,
                                      fill="#444", outline="#666", width=1)
@@ -94,6 +97,7 @@ class StopwatchWindow(FloatingWindow):
                                 fill=self.theme_manager.current["fg"],
                                 font=("Arial", 10))
 
+        # Elapsed time
         elapsed = self._elapsed()
         h_part, rem = divmod(int(elapsed), 3600)
         m_part, s_part = divmod(rem, 60)
@@ -125,6 +129,7 @@ class StopwatchWindow(FloatingWindow):
             self.canvas.create_text(w // 2, h - 15, text="🔒",
                                     fill="#aaa", font=("Arial", 10))
 
+        # Lap list (last 5)
         if self.stopwatch.lap_times:
             lap_y = h // 2 + 25
             for i, lap in enumerate(self.stopwatch.lap_times[-5:]):
@@ -141,10 +146,6 @@ class StopwatchWindow(FloatingWindow):
                              lambda e: self._show_context_menu(e))
 
     def on_destroy(self) -> None:
-        if self._preserve_on_destroy:
-            # Preserve the window state for restart – do not clear floating flag
-            return
-
         sw = self.stopwatch
         if sw:
             if self.app:
@@ -157,4 +158,3 @@ class StopwatchWindow(FloatingWindow):
             sw.floating_alpha = self.custom_alpha
             if self.app:
                 self.app.stopwatch_manager.save()
-                
