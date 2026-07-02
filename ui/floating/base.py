@@ -70,6 +70,7 @@ class FloatingWindow:
         self.group = None          # will reference a DockGroup
         self.group_leader = None   # the window that leads the group
         self._preserve_on_destroy = False  # used during restart
+        self._preview_target = None  # window currently highlighted as a live snap candidate
 
         self.app = None
 
@@ -153,23 +154,20 @@ class FloatingWindow:
             # Move the single window
             self.top.geometry(f"+{new_leader_x}+{new_leader_y}")
 
+        self._update_snap_preview()
+
     def _on_release(self, event) -> None:
         self.resizing = False
         self.save_geometry()
+        self._clear_snap_preview()
 
         if not self.locked and self._docking_enabled:
-            # If already in a group with more than one member, we are stable – don't re-dock
-            if self.group and len(self.group) > 1:
-                # Only check for undocking
-                if self.group_leader is not self:
-                    leader = self.group_leader
-                    lx, ly = leader.top.winfo_x(), leader.top.winfo_y()
-                    x, y = self.top.winfo_x(), self.top.winfo_y()
-                    if math.hypot(x - lx, y - ly) > self.UNDOCK_THRESHOLD:
-                        dock_manager.undock(self)
-                return
-
-            # Check if we should undock (only applies if we are in a group but len=1)
+            # If we're a non-leader member, check whether this drag pulled
+            # us far enough from our leader to break free of the group.
+            # This is independent of group size -- belonging to a group
+            # should never by itself prevent us from *also* trying to dock
+            # onto a new window below (that's exactly how a group grows
+            # past 2 members).
             if self.group and self.group_leader is not self:
                 leader = self.group_leader
                 lx, ly = leader.top.winfo_x(), leader.top.winfo_y()
@@ -178,7 +176,12 @@ class FloatingWindow:
                     dock_manager.undock(self)
                     return
 
-            # Try to dock with another window
+            # Try to dock with another window, or -- if we're already in a
+            # group -- extend that group with a new neighbor. This must
+            # run even when the group already has 2+ members: that's
+            # exactly the case of dragging an existing pair/cluster over
+            # to pick up a third window. Skipping it here silently
+            # disabled docking for anything past the first two windows.
             docked = dock_manager.try_dock(self)
             if docked:
                 self._flash_snap()
@@ -200,6 +203,50 @@ class FloatingWindow:
         orig = self.canvas["bg"]
         self.canvas["bg"] = "#00ffcc"
         self.top.after(200, lambda: self.canvas.config(bg=orig))
+
+    SNAP_PREVIEW_COLOR = "#00ffcc"  # matches _flash_snap's confirm color
+
+    def _update_snap_preview(self) -> None:
+        """Called on every drag-move: highlight the window we'd dock to
+        if released right now, so the user gets feedback before committing
+        instead of only finding out at release time."""
+        if self.locked or not self._docking_enabled:
+            self._clear_snap_preview()
+            return
+
+        others = [w for w in FloatingWindow._all_windows if w is not self]
+        target = dock_manager.preview_snap_target(self, others)
+
+        if target is self._preview_target:
+            return  # unchanged since last event, nothing to redraw
+
+        self._clear_snap_preview()
+        if target is not None:
+            self._set_preview_highlight(self.canvas)
+            self._set_preview_highlight(target.canvas)
+            self._preview_target = target
+
+    def _set_preview_highlight(self, canvas) -> None:
+        try:
+            canvas.configure(
+                highlightthickness=3,
+                highlightbackground=self.SNAP_PREVIEW_COLOR,
+                highlightcolor=self.SNAP_PREVIEW_COLOR,
+            )
+        except Exception:
+            pass
+
+    def _clear_snap_preview(self) -> None:
+        try:
+            self.canvas.configure(highlightthickness=0)
+        except Exception:
+            pass
+        if self._preview_target is not None:
+            try:
+                self._preview_target.canvas.configure(highlightthickness=0)
+            except Exception:
+                pass
+            self._preview_target = None
 
     # ------------------------------------------------------------------
     # Toggle fullscreen
@@ -260,6 +307,14 @@ class FloatingWindow:
             except Exception:
                 pass
 
+        self._clear_snap_preview()
+        # If another window is currently highlighting *this* one as its
+        # live snap-preview target, clear that too, or it'd keep pointing
+        # at a widget that no longer exists.
+        for w in FloatingWindow._all_windows:
+            if w is not self and w._preview_target is self:
+                w._clear_snap_preview()
+
         # Unregister from dock manager
         dock_manager.unregister(self)
 
@@ -301,9 +356,11 @@ class FloatingWindow:
     def _toggle_docking(self):
         self._docking_enabled = not self._docking_enabled
         activity_log.log("docking_toggle", self.title_text, str(self._docking_enabled))
-        if not self._docking_enabled and self.group:
-            # Disabling docking: break the group
-            dock_manager.undock(self)
+        if not self._docking_enabled:
+            self._clear_snap_preview()
+            if self.group:
+                # Disabling docking: break the group
+                dock_manager.undock(self)
 
     def _toggle_topmost(self) -> None:
         cur = bool(self.top.attributes("-topmost"))
@@ -349,4 +406,3 @@ class FloatingWindow:
 
         alpha_var.trace_add("write", _apply)
         dlg.wait_window()
-        

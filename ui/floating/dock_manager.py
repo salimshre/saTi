@@ -3,7 +3,6 @@ ui/floating/dock_manager.py – Clean docking manager with stable snapping.
 """
 
 import math
-import time
 from typing import List, Optional, Tuple, Any
 
 from core.logger import activity_log
@@ -33,15 +32,23 @@ class DockGroup:
     
     def remove_member(self, window):
         if window in self.members:
+            was_leader = (window is self.leader)
             self.members.remove(window)
             window.group = None
             window.group_leader = None
             if len(self.members) <= 1:
                 # Dissolve group
-                if self.leader:
-                    self.leader.group = None
-                    self.leader.group_leader = None
+                for remaining in self.members:
+                    remaining.group = None
+                    remaining.group_leader = None
+                self.members = []
                 return None
+            if was_leader:
+                # Promote the next member to leader so the group doesn't
+                # keep dragging around a window that has actually left it.
+                self.leader = self.members[0]
+                for member in self.members:
+                    member.group_leader = self.leader
             self._update_offsets()
         return self
     
@@ -81,7 +88,6 @@ class DockManager:
             return
         self._initialized = True
         self.groups: List[DockGroup] = []
-        self._last_snap_time = 0
         self.DOCK_THRESHOLD = 30
         self.UNDOCK_THRESHOLD = 80
     
@@ -139,24 +145,21 @@ class DockManager:
             window.group_leader = None
             activity_log.log("undock", window.title_text, "")
     
-    def find_best_snap(self, window, others: List[Any]) -> Tuple[Optional[Any], Optional[Tuple[int, int]]]:
+    def _scan_candidates(self, window, others: List[Any]) -> Tuple[Optional[Any], Optional[Tuple[int, int]], Optional[str]]:
         """
-        Find the best window to snap to.
-        Returns (target_window, (new_x, new_y)).
+        Pure scan for the nearest dockable window within threshold.
+        Does not touch cooldown state and does not move anything —
+        safe to call every mouse-motion event for live preview purposes.
+        Returns (target_window, (new_x, new_y), edge).
         """
-        # Debounce to avoid rapid re-snapping
-        now = time.time()
-        if now - self._last_snap_time < 0.3:
-            return None, None
-        
         x1, y1 = window.top.winfo_x(), window.top.winfo_y()
         w1, h1 = window.top.winfo_width(), window.top.winfo_height()
-        
+
         best_target = None
         best_new_pos = None
         best_dist = float('inf')
-        best_edge = None  # 'left','right','top','bottom' for debug
-        
+        best_edge = None  # 'left','right','top','bottom'
+
         for other in others:
             if other is window:
                 continue
@@ -164,22 +167,27 @@ class DockManager:
             if hasattr(window, 'group') and window.group:
                 if hasattr(other, 'group') and other.group and window.group is other.group:
                     continue
-            
+
             x2, y2 = other.top.winfo_x(), other.top.winfo_y()
             w2, h2 = other.top.winfo_width(), other.top.winfo_height()
-            
-            # Skip overlapping windows
+
+            # Skip only if windows meaningfully overlap (prevents eating).
+            # A tolerance of a couple px matters: after a previous snap
+            # left two windows touching, geometry rounding can put them
+            # 1px into "overlap" by this check's original math, which
+            # then permanently refuses to dock that pair again.
+            OVERLAP_TOLERANCE = 3
             overlap_x = min(x1 + w1, x2 + w2) - max(x1, x2)
             overlap_y = min(y1 + h1, y2 + h2) - max(y1, y2)
-            if overlap_x > 0 and overlap_y > 0:
+            if overlap_x > OVERLAP_TOLERANCE and overlap_y > OVERLAP_TOLERANCE:
                 continue
-            
+
             # Compute gaps for all four edges
             left_gap = x1 - (x2 + w2) if x1 > x2 + w2 else float('inf')
             right_gap = x2 - (x1 + w1) if x2 > x1 + w1 else float('inf')
             top_gap = y1 - (y2 + h2) if y1 > y2 + h2 else float('inf')
             bottom_gap = y2 - (y1 + h1) if y2 > y1 + h1 else float('inf')
-            
+
             candidates = []
             if left_gap <= self.DOCK_THRESHOLD:
                 candidates.append((left_gap, 'left', x2 + w2, y1))  # snap right of other
@@ -189,10 +197,10 @@ class DockManager:
                 candidates.append((top_gap, 'top', x1, y2 + h2))  # snap below other
             if bottom_gap <= self.DOCK_THRESHOLD:
                 candidates.append((bottom_gap, 'bottom', x1, y2 - h1))  # snap above other
-            
+
             if not candidates:
                 continue
-            
+
             # Choose the candidate with the smallest gap
             gap, edge, nx, ny = min(candidates, key=lambda c: c[0])
             if gap < best_dist:
@@ -200,18 +208,30 @@ class DockManager:
                 best_target = other
                 best_new_pos = (nx, ny)
                 best_edge = edge
-        
-        if best_target is not None:
-            self._last_snap_time = time.time()
+
+        return best_target, best_new_pos, best_edge
+
+    def find_best_snap(self, window, others: List[Any]) -> Tuple[Optional[Any], Optional[Tuple[int, int]]]:
+        """
+        Find the best window to snap to, for an actual dock commit.
+        Returns (target_window, (new_x, new_y)).
+        """
+        best_target, best_new_pos, _ = self._scan_candidates(window, others)
         return best_target, best_new_pos
 
+    def preview_snap_target(self, window, others: List[Any]) -> Optional[Any]:
+        """
+        Non-mutating lookup of the window we'd dock to right now, for live
+        drag-preview UI. Deliberately bypasses the commit cooldown — the
+        preview should track the cursor in real time, not be throttled.
+        """
+        target, _new_pos, _edge = self._scan_candidates(window, others)
+        return target
+
     def try_dock(self, window) -> bool:
-        """Attempt to dock the window. Returns True if docked."""
-        # If window is already in a group with more than one member, it's already docked
-        if hasattr(window, 'group') and window.group and len(window.group) > 1:
-            # Already docked – no need to try again
-            return False
-        
+        """Attempt to dock the window, or -- if it's already part of a
+        group -- extend that group with a new neighbor. Returns True if a
+        dock/merge happened."""
         others = [w for w in window._all_windows if w is not window]
         target, new_pos = self.find_best_snap(window, others)
         if target is None or new_pos is None:
