@@ -91,7 +91,12 @@ class FloatingWindow:
         c.bind("<ButtonRelease-1>", self._on_release)
         c.bind("<Double-Button-1>", self.toggle_fullscreen)
         self.top.bind("<Escape>", self._on_escape)
-        c.bind("<Button-3>", self._show_context_menu)
+        # Post on release, not press: if the menu appears while the right
+        # button is still down, Tk consumes the release as a "dismiss,
+        # don't invoke" event (it only treats left-button clicks as item
+        # invocation), which is exactly why the first click on an item
+        # like Lock used to do nothing and needed a second click.
+        c.bind("<ButtonRelease-3>", self._show_context_menu)
 
     def _safe_draw(self):
         try:
@@ -294,6 +299,21 @@ class FloatingWindow:
             self.stopwatch.floating_geometry = geom
             self.app.stopwatch_manager.save()
 
+    def persist_dock_group(self, group_id: str | None) -> None:
+        """Write which dock group (if any) this window currently belongs
+        to back onto its model, mirroring save_geometry's dispatch. Called
+        by DockManager whenever a dock/merge/undock changes membership, so
+        the grouping can be re-formed after a restart."""
+        if hasattr(self, "timer") and self.app:
+            self.timer.dock_group_id = group_id
+            self.app.timer_manager.save()
+        elif hasattr(self, "alarm") and self.app:
+            self.alarm.dock_group_id = group_id
+            self.app.alarm_manager.save()
+        elif hasattr(self, "stopwatch") and self.app:
+            self.stopwatch.dock_group_id = group_id
+            self.app.stopwatch_manager.save()
+
     def apply_lock_state(self, locked: bool) -> None:
         self.locked = locked
         if locked:
@@ -315,8 +335,13 @@ class FloatingWindow:
             if w is not self and w._preview_target is self:
                 w._clear_snap_preview()
 
-        # Unregister from dock manager
-        dock_manager.unregister(self)
+        # Unregister from dock manager -- unless this destroy is only
+        # happening so the app can relaunch (restart). In that case the
+        # dock_group_id we already saved must survive untouched; calling
+        # unregister here would dissolve the group and clear it, so the
+        # new process would come back up undocked.
+        if not self._preserve_on_destroy:
+            dock_manager.unregister(self)
 
         if self in FloatingWindow._all_windows:
             FloatingWindow._all_windows.remove(self)
@@ -331,26 +356,50 @@ class FloatingWindow:
     # ------------------------------------------------------------------
     # Context menu
     # ------------------------------------------------------------------
-    def _show_context_menu(self, event) -> None:
+    _CTX_LOCK_INDEX = 0
+    _CTX_DOCK_INDEX = 1
+
+    def _ensure_context_menu(self) -> tk.Menu:
+        """Build the context menu once and keep reusing it.
+
+        A brand-new tk.Menu widget hasn't been realized/mapped by the
+        window manager yet, and popping one up before that realize step
+        finishes is what causes a menu item's first click to be swallowed
+        instead of firing -- rebuilding the menu from scratch on every
+        single right-click meant every popup hit that lag. Reusing one
+        instance and just relabeling the couple of entries that change
+        (Lock/Unlock, dock on/off) avoids that entirely.
+        """
         if self._ctx_menu is not None:
-            try:
-                self._ctx_menu.destroy()
-            except Exception as exc:
-                activity_log.log("context_menu_cleanup_failed", "", str(exc))
-            self._ctx_menu = None
+            return self._ctx_menu
 
         menu = tk.Menu(self.top, tearoff=0)
-
-        lock_label = "🔒 Lock" if not self.locked else "🔓 Unlock"
-        menu.add_command(label=lock_label, command=self._toggle_lock)
-
-        dock_label = "Enable Docking" if not self._docking_enabled else "Disable Docking"
-        menu.add_command(label=dock_label, command=self._toggle_docking)
-
+        menu.add_command(command=self._toggle_lock)          # index 0: Lock/Unlock
+        menu.add_command(command=self._toggle_docking)       # index 1: Enable/Disable Docking
         menu.add_command(label="Transparency…", command=self._open_transparency_dialog)
         menu.add_command(label="Toggle Always on Top", command=self._toggle_topmost)
-
         self._ctx_menu = menu
+        return menu
+
+    def _show_context_menu(self, event) -> None:
+        menu = self._ensure_context_menu()
+        menu.entryconfigure(
+            self._CTX_LOCK_INDEX,
+            label="🔒 Lock" if not self.locked else "🔓 Unlock",
+        )
+        menu.entryconfigure(
+            self._CTX_DOCK_INDEX,
+            label="Enable Docking" if not self._docking_enabled else "Disable Docking",
+        )
+
+        # This window is overrideredirect(True), which on Windows (and
+        # some X11 setups) means it doesn't reliably hold real OS input
+        # focus. A popup Menu is itself a small toplevel, and if its
+        # parent never had focus, the menu can take a visible moment to
+        # start actually highlighting/responding to the mouse -- which is
+        # exactly the "renders late" / "first click does nothing" symptom.
+        # Forcing focus here makes it come up fully responsive right away.
+        self.top.focus_force()
         try:
             menu.tk_popup(event.x_root, event.y_root)
         finally:
@@ -414,3 +463,5 @@ class FloatingWindow:
 
         alpha_var.trace_add("write", _apply)
         dlg.wait_window()
+
+        
