@@ -182,11 +182,15 @@ class DockManager:
             if overlap_x > OVERLAP_TOLERANCE and overlap_y > OVERLAP_TOLERANCE:
                 continue
 
-            # Compute gaps for all four edges
-            left_gap = x1 - (x2 + w2) if x1 > x2 + w2 else float('inf')
-            right_gap = x2 - (x1 + w1) if x2 > x1 + w1 else float('inf')
-            top_gap = y1 - (y2 + h2) if y1 > y2 + h2 else float('inf')
-            bottom_gap = y2 - (y1 + h1) if y2 > y1 + h1 else float('inf')
+            # Compute gaps for all four edges. Uses >= (not just >) so
+            # windows that land exactly flush (gap == 0) still count as
+            # adjacent -- otherwise a window that happens to come to rest
+            # perfectly touching another, with zero gap, would never be
+            # detected as a dock candidate.
+            left_gap = x1 - (x2 + w2) if x1 >= x2 + w2 else float('inf')
+            right_gap = x2 - (x1 + w1) if x2 >= x1 + w1 else float('inf')
+            top_gap = y1 - (y2 + h2) if y1 >= y2 + h2 else float('inf')
+            bottom_gap = y2 - (y1 + h1) if y2 >= y1 + h1 else float('inf')
 
             candidates = []
             if left_gap <= self.DOCK_THRESHOLD:
@@ -267,4 +271,3 @@ class DockManager:
 
 # Singleton instance
 dock_manager = DockManager()
-

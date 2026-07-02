@@ -1,11 +1,11 @@
 ﻿# Repository file structure
-Generated: 2026-07-02T09:57:26+05:45
+Generated: 2026-07-02T11:50:36+05:45
 A cleaner, hierarchical view of the repository. Directories end with '/'.
 Cache folders (__pycache__, .pytest_cache, .ruff_cache) are summarised.
 Excluded: .git, .agents, FILE_STRUCTURE.md.
 ## Summary
 - Directories: 20
-- Files: 68
+- Files: 112
 ## Tree
 ├── .gitattributes (68 B)
 ├── .gitignore (273 B)
@@ -60,11 +60,54 @@ Excluded: .git, .agents, FILE_STRUCTURE.md.
 │   ├── test_alarm_model.py (2.30 KB)
 │   ├── test_alarm_popup.py (2.38 KB)
 │   ├── test_countdown_window.py (794 B)
+│   ├── test_dock_manager.py (9.75 KB)
 │   ├── test_persistence.py (814 B)
 │   ├── test_stopwatch_model.py (740 B)
 │   ├── test_timer_model.py (3.53 KB)
 │   └── test_timer_tab_controller.py (2.32 KB)
 ├── tmp/
+│   ├── __init__.py (158 B)
+│   ├── alarm.py (8.90 KB)
+│   ├── alarm_edit.py (9.83 KB)
+│   ├── alarm_popup.py (3.51 KB)
+│   ├── alarm_tab.py (7.50 KB)
+│   ├── alarm_window.py (3.56 KB)
+│   ├── app.py (11.50 KB)
+│   ├── app_meta.py (72 B)
+│   ├── base.py (16.04 KB)
+│   ├── build_desktop.py (432 B)
+│   ├── ci.yml (604 B)
+│   ├── config.py (2.47 KB)
+│   ├── countdown.py (10.21 KB)
+│   ├── data_import_export.py (4.12 KB)
+│   ├── icon.py (1.53 KB)
+│   ├── import_dialog.py (1.08 KB)
+│   ├── logger.py (1.45 KB)
+│   ├── main.py (754 B)
+│   ├── notifications.py (413 B)
+│   ├── persistence.py (1.02 KB)
+│   ├── pyproject.toml (944 B)
+│   ├── ring.py (3.00 KB)
+│   ├── scheduler.py (1.84 KB)
+│   ├── settings.py (732 B)
+│   ├── settings_dialog.py (10.43 KB)
+│   ├── sound.py (6.07 KB)
+│   ├── stopwatch.py (3.93 KB)
+│   ├── stopwatch_tab.py (9.45 KB)
+│   ├── stopwatch_window.py (6.32 KB)
+│   ├── test_alarm_model.py (2.30 KB)
+│   ├── test_alarm_popup.py (2.38 KB)
+│   ├── test_countdown_window.py (794 B)
+│   ├── test_persistence.py (814 B)
+│   ├── test_stopwatch_model.py (740 B)
+│   ├── test_timer_model.py (3.53 KB)
+│   ├── test_timer_tab_controller.py (2.32 KB)
+│   ├── themes.py (3.67 KB)
+│   ├── timer.py (6.04 KB)
+│   ├── timer_edit.py (2.25 KB)
+│   ├── timer_tab.py (9.28 KB)
+│   ├── tmp.py (336 B)
+│   └── tray.py (3.42 KB)
 └── ui/
     ├── __init__.py (121 B)
     ├── alarm_popup.py (3.51 KB)
@@ -85,8 +128,9 @@ Excluded: .git, .agents, FILE_STRUCTURE.md.
     ├── floating/
     │   ├── __init__.py (204 B)
     │   ├── alarm_window.py (3.56 KB)
-    │   ├── base.py (16.04 KB)
+    │   ├── base.py (16.03 KB)
     │   ├── countdown.py (10.21 KB)
+    │   ├── dock_manager.py (10.69 KB)
     │   ├── stopwatch_window.py (6.32 KB)
     │   └── __pycache__/ (summary: compiled/pycache)
     └── tabs/
