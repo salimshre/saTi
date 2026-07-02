@@ -351,7 +351,15 @@ class FloatingWindow:
         menu.add_command(label="Toggle Always on Top", command=self._toggle_topmost)
 
         self._ctx_menu = menu
-        menu.tk_popup(event.x_root, event.y_root)
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            # tk_popup() grabs the pointer but never releases it on its
+            # own. Without releasing here, the first click on a menu item
+            # (on X11 especially) just dismisses the menu instead of
+            # firing its command -- you'd have to open the menu and click
+            # the item a second time for it to actually take effect.
+            menu.grab_release()
 
     def _toggle_docking(self):
         self._docking_enabled = not self._docking_enabled

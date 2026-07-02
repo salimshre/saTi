@@ -267,3 +267,4 @@ class DockManager:
 
 # Singleton instance
 dock_manager = DockManager()
+
