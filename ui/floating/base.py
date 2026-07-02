@@ -6,6 +6,24 @@ import tkinter as tk
 from tkinter import ttk
 from core.logger import activity_log
 
+from ui.icon import get_logo_photoimage
+...
+class FloatingWindow:
+    def __init__(self, master, settings, theme_manager,
+                 width: int = 160, height: int = 160, title: str = ""):
+        ...
+        self.top = tk.Toplevel(master)
+        self.top.overrideredirect(True)
+        self.top.attributes("-topmost", settings.get("always_on_top", True))
+        self.top.attributes("-alpha",   settings.get("transparency", 0.85))
+        self.top.geometry(f"{width}x{height}+100+100")
+        
+        # Set icon
+        logo = get_logo_photoimage()
+        if logo:
+            self.top.iconphoto(False, logo)
+        ...
+        
 
 class FloatingWindow:
     GRIP = 12

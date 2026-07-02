@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 import subprocess
+from pathlib import Path
 from tkinter import messagebox
 
 from core.logger import activity_log
@@ -51,7 +52,7 @@ class TrayManager:
     def _create_icon(self) -> bool:
         try:
             import pystray
-            from PIL import Image, ImageDraw
+            from PIL import Image
         except Exception as exc:
             activity_log.log("tray_import_failed", "", str(exc))
             return False
@@ -59,14 +60,29 @@ class TrayManager:
         if self.icon is not None:
             return True
 
-        image = Image.new("RGB", (64, 64), color="#1e1e1e")
-        draw = ImageDraw.Draw(image)
-        draw.ellipse((10, 10, 54, 54), fill="#00ffcc")
-        draw.text((24, 19), "S", fill="#000000")
+        # Load logo from assets folder
+        assets_dir = Path(__file__).resolve().parents[1] / "assets"
+        logo_path = assets_dir / "logo.png"
+        image = None
+        if logo_path.exists():
+            try:
+                image = Image.open(logo_path)
+                # Resize to a reasonable tray size (e.g., 64x64)
+                image = image.resize((64, 64), Image.Resampling.LANCZOS)
+            except Exception as exc:
+                activity_log.log("tray_logo_load_failed", "", str(exc))
+
+        if image is None:
+            # Fallback: generate a simple icon
+            from PIL import ImageDraw
+            image = Image.new("RGB", (64, 64), color="#1e1e1e")
+            draw = ImageDraw.Draw(image)
+            draw.ellipse((10, 10, 54, 54), fill="#00ffcc")
+            draw.text((24, 19), "S", fill="#000000")
 
         menu = pystray.Menu(
             pystray.MenuItem("Show", lambda icon, item: self._show_window()),
-            pystray.MenuItem("Restart", lambda icon, item: self._restart_app()),  # <-- NEW
+            pystray.MenuItem("Restart", lambda icon, item: self._restart_app()),
             pystray.MenuItem("Exit", lambda icon, item: self._exit_app()),
         )
         self.icon = pystray.Icon("sati", image, APP_NAME, menu)
